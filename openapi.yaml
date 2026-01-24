@@ -1,0 +1,180 @@
+openapi: 3.1.0
+
+info:
+  title: Weather Service API
+  version: 1.1.0
+  description: >
+    A secure weather forecast API backed by the U.S. National Weather Service.
+    Returns today's short forecast, a temperature classification, and the
+    nearest city/state derived from NWS relative location data.
+
+servers:
+  - url: http://localhost:3000
+
+paths:
+  /v1/forecast:
+    get:
+      summary: Get today's forecast by coordinates
+      description: >
+        Returns today's short forecast, temperature in Fahrenheit,
+        a temperature category (cold, moderate, hot), and the nearest
+        city/state provided by the National Weather Service.
+      security:
+        - basicAuth: []
+      parameters:
+        - in: query
+          name: lat
+          required: true
+          description: Latitude in decimal degrees.
+          schema:
+            type: number
+            minimum: -90
+            maximum: 90
+          example: 25.7617
+        - in: query
+          name: lon
+          required: true
+          description: Longitude in decimal degrees.
+          schema:
+            type: number
+            minimum: -180
+            maximum: 180
+          example: -80.1918
+      responses:
+        "200":
+          description: Forecast returned successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ForecastResponse"
+              examples:
+                miami:
+                  summary: Miami, FL example
+                  value:
+                    location:
+                      lat: 25.7617
+                      lon: -80.1918
+                      city: Miami
+                      state: FL
+                    today:
+                      shortForecast: Mostly Sunny
+                      temperatureF: 84
+                      temperatureCategory: hot
+                    source:
+                      provider: National Weather Service
+                      forecastUrl: https://api.weather.gov/gridpoints/MFL/110,66/forecast
+        "400":
+          description: Invalid request parameters.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing or invalid credentials.
+          headers:
+            WWW-Authenticate:
+              schema:
+                type: string
+              description: HTTP Basic authentication challenge.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Too many requests.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Upstream National Weather Service error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "504":
+          description: Upstream National Weather Service timeout.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+
+  schemas:
+    ForecastResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - location
+        - today
+        - source
+      properties:
+        location:
+          type: object
+          additionalProperties: false
+          required:
+            - lat
+            - lon
+          properties:
+            lat:
+              type: number
+              description: Latitude in decimal degrees.
+            lon:
+              type: number
+              description: Longitude in decimal degrees.
+            city:
+              type: string
+              nullable: true
+              description: Nearest city as reported by NWS (relative location).
+            state:
+              type: string
+              nullable: true
+              description: State abbreviation as reported by NWS.
+        today:
+          type: object
+          additionalProperties: false
+          required:
+            - shortForecast
+            - temperatureF
+            - temperatureCategory
+          properties:
+            shortForecast:
+              type: string
+              description: Short textual weather forecast.
+            temperatureF:
+              type: integer
+              description: Temperature in degrees Fahrenheit.
+            temperatureCategory:
+              type: string
+              enum:
+                - cold
+                - moderate
+                - hot
+              description: Human-friendly temperature classification.
+        source:
+          type: object
+          additionalProperties: false
+          required:
+            - provider
+            - forecastUrl
+          properties:
+            provider:
+              type: string
+              example: National Weather Service
+            forecastUrl:
+              type: string
+              description: URL of the underlying NWS forecast resource.
+
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - error
+      properties:
+        error:
+          type: string
