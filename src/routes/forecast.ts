@@ -1,11 +1,11 @@
 "use strict";
 
-const express = require("express");
-const { z } = require("zod");
+import express, { Request, Response, NextFunction } from "express";
+import { z } from "zod";
 
-const { validate } = require("../middleware/validate");
-const { getForecastForPoint } = require("../services/nwsClient");
-const { characterizeTempF } = require("../services/tempCategory");
+import { validate } from "../middleware/validate";
+import { getForecastForPoint } from "../services/nwsClient";
+import { characterizeTempF } from "../services/tempCategory";
 
 const router = express.Router();
 
@@ -26,9 +26,9 @@ const querySchema = z.object({
     .refine((n) => n >= -180 && n <= 180, "lon out of range")
 });
 
-router.get("/", validate({ query: querySchema }), async (req, res, next) => {
+router.get("/", validate({ query: querySchema }), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { lat, lon } = req.query;
+    const { lat, lon } = req.query as unknown as { lat: number; lon: number };
 
     const today = await getForecastForPoint(lat, lon);
 
@@ -59,4 +59,4 @@ router.get("/", validate({ query: querySchema }), async (req, res, next) => {
   }
 });
 
-module.exports = router;
+export default router;

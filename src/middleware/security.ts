@@ -1,11 +1,12 @@
 "use strict";
 
-const helmet = require("helmet");
-const cors = require("cors");
-const hpp = require("hpp");
-const rateLimit = require("express-rate-limit");
+import helmet from "helmet";
+import cors from "cors";
+import hpp from "hpp";
+import rateLimit from "express-rate-limit";
+import { Express } from "express";
 
-function parseAllowlist() {
+function parseAllowlist(): string[] {
   const raw = process.env.CORS_ALLOWLIST || "";
   return raw
     .split(",")
@@ -13,7 +14,7 @@ function parseAllowlist() {
     .filter(Boolean);
 }
 
-function applySecurityMiddleware(app) {
+export function applySecurityMiddleware(app: Express): void {
   // This service is JSON-only and does not render HTML, so CSP is disabled
   // to avoid unnecessary complexity while still keeping other headers.
   app.use(
@@ -58,5 +59,3 @@ function applySecurityMiddleware(app) {
     })
   );
 }
-
-module.exports = { applySecurityMiddleware };

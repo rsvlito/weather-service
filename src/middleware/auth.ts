@@ -1,16 +1,22 @@
 "use strict";
 
-const crypto = require("crypto");
-const bcrypt = require("bcryptjs");
+import crypto from "crypto";
+import bcrypt from "bcryptjs";
+import { Request, Response, NextFunction } from "express";
 
-function timingSafeEqualStr(a, b) {
+interface BasicAuthCredentials {
+  username: string;
+  password: string;
+}
+
+function timingSafeEqualStr(a: string, b: string): boolean {
   const aBuf = Buffer.from(String(a), "utf8");
   const bBuf = Buffer.from(String(b), "utf8");
   if (aBuf.length !== bBuf.length) return false;
   return crypto.timingSafeEqual(aBuf, bBuf);
 }
 
-function parseBasicAuth(headerValue) {
+function parseBasicAuth(headerValue: string | undefined): BasicAuthCredentials | null {
   if (!headerValue || typeof headerValue !== "string") return null;
   const parts = headerValue.split(" ");
   if (parts.length !== 2) return null;
@@ -32,7 +38,7 @@ function parseBasicAuth(headerValue) {
   };
 }
 
-function requireBasicAuth(req, res, next) {
+export function requireBasicAuth(req: Request, res: Response, next: NextFunction): void {
   // Judgement call:
   // Using HTTP Basic Auth here strictly as a minimal exercise-level mechanism.
   // In production this service should sit behind an API gateway with OAuth2/JWT
@@ -43,14 +49,16 @@ function requireBasicAuth(req, res, next) {
 
   // Fail closed
   if (!expectedUser || !expectedHash) {
-    return res.status(500).json({ error: "Auth not configured" });
+    res.status(500).json({ error: "Auth not configured" });
+    return;
   }
 
   const creds = parseBasicAuth(req.headers.authorization);
 
   if (!creds) {
     res.set("WWW-Authenticate", 'Basic realm="weather-service", charset="UTF-8"');
-    return res.status(401).json({ error: "Unauthorized" });
+    res.status(401).json({ error: "Unauthorized" });
+    return;
   }
 
   // Username comparison in constant time (when lengths match)
@@ -61,10 +69,9 @@ function requireBasicAuth(req, res, next) {
 
   if (!userOk || !passOk) {
     res.set("WWW-Authenticate", 'Basic realm="weather-service", charset="UTF-8"');
-    return res.status(401).json({ error: "Unauthorized" });
+    res.status(401).json({ error: "Unauthorized" });
+    return;
   }
 
-  return next();
+  next();
 }
-
-module.exports = { requireBasicAuth };

@@ -1,6 +1,6 @@
 "use strict";
 
-const { getCache, makeCacheKey } = require("./cache");
+import { getCache, makeCacheKey } from "./cache";
 
 const NWS_BASE = "https://api.weather.gov";
 const USER_AGENT = process.env.NWS_USER_AGENT;
@@ -9,11 +9,20 @@ if (!USER_AGENT || USER_AGENT.trim().length < 6) {
   throw new Error("Missing or invalid NWS_USER_AGENT env var");
 }
 
-function safeRoundCoord(n) {
+export interface ForecastResult {
+  shortForecast: string;
+  temperature: number;
+  temperatureUnit: string;
+  city: string | null;
+  state: string | null;
+  forecastUrl: string;
+}
+
+function safeRoundCoord(n: number): number {
   return Math.round(n * 10_000) / 10_000;
 }
 
-async function fetchJson(url, { timeoutMs = 4000 } = {}) {
+async function fetchJson(url: string, { timeoutMs = 4000 } = {}): Promise<any> {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -23,22 +32,22 @@ async function fetchJson(url, { timeoutMs = 4000 } = {}) {
       redirect: "follow",
       signal: controller.signal,
       headers: {
-        "User-Agent": USER_AGENT,
+        "User-Agent": USER_AGENT!,
         "Accept": "application/geo+json"
       }
     });
 
     if (!resp.ok) {
-      const err = new Error(`Upstream NWS error (${resp.status})`);
+      const err: any = new Error(`Upstream NWS error (${resp.status})`);
       err.statusCode = 502;
       err.upstreamStatus = resp.status;
       throw err;
     }
 
     return await resp.json();
-  } catch (e) {
+  } catch (e: any) {
     if (e.name === "AbortError") {
-      const err = new Error("Upstream timeout");
+      const err: any = new Error("Upstream timeout");
       err.statusCode = 504;
       throw err;
     }
@@ -48,16 +57,16 @@ async function fetchJson(url, { timeoutMs = 4000 } = {}) {
   }
 }
 
-function pickTodaysPeriod(periods) {
+function pickTodaysPeriod(periods: any[]): any {
   // Judgement call:
   // NWS returns multiple 12h periods (day/night). For a simple consumer-facing
-  // API, I prefer a predictable definition of “today” rather than strict
+  // API, I prefer a predictable definition of "today" rather than strict
   // timezone math. Priority:
-  // 1) A period explicitly named “Today”
+  // 1) A period explicitly named "Today"
   // 2) First daytime period
   // 3) Fallback to first available period
   if (!Array.isArray(periods) || periods.length === 0) {
-    const err = new Error("No forecast periods available");
+    const err: any = new Error("No forecast periods available");
     err.statusCode = 502;
     throw err;
   }
@@ -73,7 +82,7 @@ function pickTodaysPeriod(periods) {
   return periods[0];
 }
 
-async function getForecastForPoint(lat, lon) {
+export async function getForecastForPoint(lat: number, lon: number): Promise<ForecastResult> {
   const cache = getCache();
 
   const rLat = safeRoundCoord(lat);
@@ -88,7 +97,7 @@ async function getForecastForPoint(lat, lon) {
 
   const forecastUrl = point?.properties?.forecast;
   if (!forecastUrl || typeof forecastUrl !== "string") {
-    const err = new Error("Unexpected NWS /points response");
+    const err: any = new Error("Unexpected NWS /points response");
     err.statusCode = 502;
     throw err;
   }
@@ -100,7 +109,7 @@ async function getForecastForPoint(lat, lon) {
   const periods = forecast?.properties?.periods;
   const today = pickTodaysPeriod(periods);
 
-  const result = {
+  const result: ForecastResult = {
     shortForecast: today.shortForecast,
     temperature: today.temperature,
     temperatureUnit: today.temperatureUnit,
@@ -120,5 +129,3 @@ async function getForecastForPoint(lat, lon) {
 
   return result;
 }
-
-module.exports = { getForecastForPoint };

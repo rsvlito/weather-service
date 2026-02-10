@@ -1,6 +1,6 @@
 "use strict";
 
-function characterizeTempF(tempF) {
+export function characterizeTempF(tempF: number): string {
   // Judgement call:
   // Thresholds chosen to be intuitive for most U.S. users rather than meteorological precision.
   // These would be configurable in a real system.
@@ -10,5 +10,3 @@ function characterizeTempF(tempF) {
   if (tempF >= 80) return "hot";
   return "moderate";
 }
-
-module.exports = { characterizeTempF };
