@@ -1,6 +1,6 @@
 "use strict";
 
-const bcrypt = require("bcryptjs");
+import bcrypt from "bcryptjs";
 
 process.env.NWS_USER_AGENT = "weather-service-tests (test@example.com)";
 process.env.AUTH_USERNAME = "demo";
@@ -14,22 +14,22 @@ const TEST_PASSWORD = "test-password";
 // Keep the cost low so tests run fast (still exercises the auth path).
 process.env.AUTH_PASSWORD_HASH = bcrypt.hashSync(TEST_PASSWORD, 4);
 
-const request = require("supertest");
+import request from "supertest";
 
 // Mock fetch before importing app
-global.fetch = jest.fn();
+global.fetch = jest.fn() as jest.Mock;
 
-const app = require("../src/app");
+import app from "../src/app";
 
-function basicAuthHeader(user, pass) {
+function basicAuthHeader(user: string, pass: string): string {
   return "Basic " + Buffer.from(`${user}:${pass}`, "utf8").toString("base64");
 }
 
 describe("GET /v1/forecast", () => {
-  beforeEach(() => fetch.mockReset());
+  beforeEach(() => (fetch as jest.Mock).mockReset());
 
   test("returns today's short forecast + temperature category", async () => {
-    fetch
+    (fetch as jest.Mock)
       .mockResolvedValueOnce({
         ok: true,
         status: 200,

@@ -12,6 +12,8 @@
 # Build files and directories
 /dist
 /build
+dist/
+*.js.map
 
 # IDE-specific files (e.g., VS Code)
 .vscode/
