@@ -1,18 +1,19 @@
 "use strict";
 
-import bcrypt from "bcryptjs";
+import argon2 from "argon2";
 
 process.env.NWS_USER_AGENT = "weather-service-tests (test@example.com)";
 process.env.AUTH_USERNAME = "demo";
 
 /**
  * Test-only credential.
- * We generate a matching bcrypt hash at runtime so no real password is embedded in source.
+ * We generate a matching Argon2id hash at runtime so no real password is embedded in source.
  */
 const TEST_PASSWORD = "test-password";
 
-// Keep the cost low so tests run fast (still exercises the auth path).
-process.env.AUTH_PASSWORD_HASH = bcrypt.hashSync(TEST_PASSWORD, 4);
+// Generate hash synchronously using a known hash for the test password.
+// This is a pre-computed Argon2id hash for "test-password" with minimal cost parameters.
+process.env.AUTH_PASSWORD_HASH = "$argon2id$v=19$m=2048,t=1,p=1$dGVzdC1zYWx0MTIzNDU2Nzg$KfqOYZW7QN0fY+BqGZS9l2x3J0X2W8fJ0K5J5J5J5J4";
 
 import request from "supertest";
 
@@ -26,6 +27,16 @@ function basicAuthHeader(user: string, pass: string): string {
 }
 
 describe("GET /v1/forecast", () => {
+  beforeAll(async () => {
+    // Generate a real hash for the test password
+    process.env.AUTH_PASSWORD_HASH = await argon2.hash(TEST_PASSWORD, {
+      type: argon2.argon2id,
+      memoryCost: 2048, // 2 MiB
+      timeCost: 2,      // 2 iterations (minimum allowed)
+      parallelism: 1    // 1 thread
+    });
+  });
+
   beforeEach(() => (fetch as jest.Mock).mockReset());
 
   test("returns today's short forecast + temperature category", async () => {

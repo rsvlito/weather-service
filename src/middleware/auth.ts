@@ -1,7 +1,7 @@
 "use strict";
 
 import crypto from "crypto";
-import bcrypt from "bcryptjs";
+import argon2 from "argon2";
 import { Request, Response, NextFunction } from "express";
 
 interface BasicAuthCredentials {
@@ -38,7 +38,7 @@ function parseBasicAuth(headerValue: string | undefined): BasicAuthCredentials |
   };
 }
 
-export function requireBasicAuth(req: Request, res: Response, next: NextFunction): void {
+export async function requireBasicAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   // Judgement call:
   // Using HTTP Basic Auth here strictly as a minimal exercise-level mechanism.
   // In production this service should sit behind an API gateway with OAuth2/JWT
@@ -64,8 +64,14 @@ export function requireBasicAuth(req: Request, res: Response, next: NextFunction
   // Username comparison in constant time (when lengths match)
   const userOk = timingSafeEqualStr(creds.username, expectedUser);
 
-  // Password check: bcrypt compare against stored hash (service never stores plaintext)
-  const passOk = bcrypt.compareSync(creds.password, expectedHash);
+  // Password check: Argon2id verify against stored hash (service never stores plaintext)
+  let passOk = false;
+  try {
+    passOk = await argon2.verify(expectedHash, creds.password);
+  } catch {
+    // Invalid hash format or verification error
+    passOk = false;
+  }
 
   if (!userOk || !passOk) {
     res.set("WWW-Authenticate", 'Basic realm="weather-service", charset="UTF-8"');

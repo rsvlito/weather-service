@@ -46,6 +46,6 @@ Example:
 curl -u demo:{password} "http://localhost:3000/v1/forecast?lat=39.7456&lon=-97.0892"
 ```
 
-Set these in `.env` (only the bcrypt hash is stored by the service):
+Set these in `.env` (only the Argon2id hash is stored by the service):
 - `AUTH_USERNAME`
 - `AUTH_PASSWORD_HASH`
