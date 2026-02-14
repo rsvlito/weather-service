@@ -11,10 +11,6 @@ process.env.AUTH_USERNAME = "demo";
  */
 const TEST_PASSWORD = "test-password";
 
-// Generate hash synchronously using a known hash for the test password.
-// This is a pre-computed Argon2id hash for "test-password" with minimal cost parameters.
-process.env.AUTH_PASSWORD_HASH = "$argon2id$v=19$m=2048,t=1,p=1$dGVzdC1zYWx0MTIzNDU2Nzg$KfqOYZW7QN0fY+BqGZS9l2x3J0X2W8fJ0K5J5J5J5J4";
-
 import request from "supertest";
 
 // Mock fetch before importing app
@@ -28,11 +24,11 @@ function basicAuthHeader(user: string, pass: string): string {
 
 describe("GET /v1/forecast", () => {
   beforeAll(async () => {
-    // Generate a real hash for the test password
+    // Generate a real hash for the test password with minimal cost for test performance
     process.env.AUTH_PASSWORD_HASH = await argon2.hash(TEST_PASSWORD, {
       type: argon2.argon2id,
       memoryCost: 2048, // 2 MiB
-      timeCost: 2,      // 2 iterations (minimum allowed)
+      timeCost: 2,      // 2 iterations
       parallelism: 1    // 1 thread
     });
   });
