@@ -49,3 +49,6 @@ curl -u demo:{password} "http://localhost:3000/v1/forecast?lat=39.7456&lon=-97.0
 Set these in `.env` (only the Argon2id hash is stored by the service):
 - `AUTH_USERNAME`
 - `AUTH_PASSWORD_HASH`
+
+## Contributing
+This repository does **not** accept automated pull requests from GitHub Copilot or other automated agents. All changes should be intentionally requested by repository maintainers. See [`.github/COPILOT.md`](.github/COPILOT.md) for details.
